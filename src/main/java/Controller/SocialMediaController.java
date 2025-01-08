@@ -5,11 +5,11 @@ import org.eclipse.jetty.http.HttpStatus;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import DAO.Dao;
 import DAO.StorageException;
 import Model.Account;
 import Model.Message;
 import Service.SocialMediaService;
+import Service.SocialMediaService.LoginException;
 import Service.SocialMediaService.RegisterAccountException;
 import Service.SocialMediaService.SendMessageException;
 import io.javalin.Javalin;
@@ -33,7 +33,33 @@ public class SocialMediaController {
         Javalin builder = Javalin.create();
         builder.post("messages", this::handlePostMessage);
         builder.post("register", this::handlePostRegister);
+        builder.post("login", this::handlePostLogin);
         return builder;
+    }
+
+    private void handlePostLogin(final Context context) {
+        final Account account;
+        try {
+            account = om.readValue(context.body(), Account.class);
+        } catch (JsonProcessingException e) {
+            context.status(HttpStatus.BAD_REQUEST_400);
+            return;
+        }
+
+        final int account_id;
+        try {
+            account_id = this.service.login(account.username, account.password);
+        } catch (StorageException e) {
+            context.status(HttpStatus.INTERNAL_SERVER_ERROR_500);
+            return;
+        } catch (LoginException e) {
+            context.status(HttpStatus.UNAUTHORIZED_401);
+            return;
+        }
+ 
+        account.account_id = account_id;
+
+        context.json(account);
     }
 
     private void handlePostMessage(final Context context) {

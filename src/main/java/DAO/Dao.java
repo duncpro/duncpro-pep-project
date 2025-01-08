@@ -5,7 +5,9 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.ResultSet;
+import java.util.Optional;
 
+import Model.Account;
 import Util.ConnectionUtil;
 
 /**
@@ -40,6 +42,31 @@ public class Dao {
         } catch (final SQLException e) {
             throw new StorageException(e);
         }
+    }
+
+    public Optional<Account> getUserByUsername(final String username) throws StorageException {
+        try {
+            try (final Connection connection = ConnectionUtil.getConnection()) {
+                try (final PreparedStatement statement = connection.prepareStatement(
+                    "SELECT account_id, password FROM account WHERE username = ?"))
+                {
+                    statement.setString(1, username);
+                    try (final ResultSet result = statement.executeQuery()) {
+                        if (result.next()) {
+                            return Optional.of(new Account(
+                                result.getInt(1),
+                                username,
+                                result.getString(2)
+                            ));
+                        }
+                    }
+                }
+            }
+        } catch (final SQLException e) {
+            throw new StorageException(e);
+        }
+
+        return Optional.empty();
     }
 
 

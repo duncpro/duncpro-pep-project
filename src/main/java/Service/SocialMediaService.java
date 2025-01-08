@@ -2,6 +2,10 @@ package Service;
 
 import DAO.Dao;
 import DAO.StorageException;
+import Model.Account;
+
+import java.util.Optional;
+import java.util.Objects;
 
 public class SocialMediaService {
     private final Dao dao = new Dao();
@@ -22,5 +26,20 @@ public class SocialMediaService {
         if (password.length() < 4) throw new RegisterAccountException();
         if (this.dao.isUsername(username)) throw new RegisterAccountException();
         return this.dao.insertAccount(username, password);
+    }
+
+    public static class LoginException extends Exception {}
+
+    public int login(String username, String password) throws StorageException, LoginException {
+        Optional<Account> result = this.dao.getUserByUsername(username);
+
+        if (result.isEmpty()) throw new LoginException();
+        
+        Account account = result.get();
+
+        if (!Objects.equals(account.password, password)) 
+            throw new LoginException();
+
+        return account.account_id;
     }
 }
