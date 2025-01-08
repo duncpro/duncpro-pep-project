@@ -48,4 +48,8 @@ public class SocialMediaService {
     public List<Message> getAllMessages() throws StorageException {
         return this.dao.getAllMessages();
     }
+
+    public Optional<Message> getMessageById(int id) throws StorageException {
+        return this.dao.getMessageById(id);
+    }
 }

@@ -14,6 +14,7 @@ import Service.SocialMediaService.RegisterAccountException;
 import Service.SocialMediaService.SendMessageException;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
+import java.util.Optional;
 
 /**
  * TODO: You will need to write your own endpoints and handlers for your controller. The endpoints you will need can be
@@ -35,7 +36,30 @@ public class SocialMediaController {
         builder.post("register", this::handlePostRegister);
         builder.post("login", this::handlePostLogin);
         builder.get("messages", this::handleGetMessages);
+        builder.get("messages/{id}", this::handleGetMessageId);
         return builder;
+    }
+
+    private void handleGetMessageId(final Context context) {
+        final int id;
+        try {
+            id = Integer.valueOf(context.pathParam("id"));
+        } catch (NumberFormatException e) {
+            return;
+        }
+
+        final Message message;
+        try {
+            message = this.service.getMessageById(id).orElse(null);
+        } catch (StorageException e) {
+            context.status(HttpStatus.INTERNAL_SERVER_ERROR_500);
+            e.printStackTrace();
+            return;
+        }
+
+        if (message == null) return;
+
+        context.json(message);
     }
 
     private void handleGetMessages(final Context context) {

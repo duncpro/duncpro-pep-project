@@ -22,6 +22,30 @@ import Util.ConnectionUtil;
  */
 
 public class Dao {
+    public Optional<Message> getMessageById(int id) throws StorageException {
+        try {
+            try (final Connection connection = ConnectionUtil.getConnection()) {
+                try (final PreparedStatement statement = connection.prepareStatement(
+                    "SELECT posted_by, message_text, time_posted_epoch FROM message WHERE message_id = ?;")) {
+                        statement.setInt(1, id);
+                        try (final ResultSet results = statement.executeQuery()) {
+                            if (results.next()) {
+                                final Message message = new Message();
+                                message.message_id = id;
+                                message.posted_by = results.getInt(1);
+                                message.message_text = results.getString(2);
+                                message.time_posted_epoch = results.getLong(3);
+                                return Optional.of(message);
+                            }
+                        }
+                }
+            }
+        } catch (SQLException e) {
+            throw new StorageException(e);
+        }
+        return Optional.empty();
+    }
+
     public List<Message> getAllMessages() throws StorageException {
         final List<Message> messages = new ArrayList<Message>();
         try {
