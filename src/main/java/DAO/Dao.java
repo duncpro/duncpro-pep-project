@@ -6,8 +6,11 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.ResultSet;
 import java.util.Optional;
+import java.util.List;
+import java.util.ArrayList;
 
 import Model.Account;
+import Model.Message;
 import Util.ConnectionUtil;
 
 /**
@@ -19,6 +22,30 @@ import Util.ConnectionUtil;
  */
 
 public class Dao {
+    public List<Message> getAllMessages() throws StorageException {
+        final List<Message> messages = new ArrayList<Message>();
+        try {
+            try (final Connection connection = ConnectionUtil.getConnection()) {
+                try (final PreparedStatement statement = connection.prepareStatement(
+                    "SELECT message_id, posted_by, message_text, time_posted_epoch FROM message;")) {
+                        try (final ResultSet results = statement.executeQuery()) {
+                            while (results.next()) {
+                                final Message message = new Message();
+                                message.message_id = results.getInt(1);
+                                message.posted_by = results.getInt(2);
+                                message.message_text = results.getString(3);
+                                message.time_posted_epoch = results.getLong(4);
+                                messages.add(message);
+                            }
+                        }
+                }
+            }
+        } catch (SQLException e) {
+            throw new StorageException(e);
+        }
+        return messages;
+    }
+
     public int insertAccount(final String username, final String password) 
     throws StorageException 
     {

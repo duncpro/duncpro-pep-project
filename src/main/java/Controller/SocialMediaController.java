@@ -34,7 +34,18 @@ public class SocialMediaController {
         builder.post("messages", this::handlePostMessage);
         builder.post("register", this::handlePostRegister);
         builder.post("login", this::handlePostLogin);
+        builder.get("messages", this::handleGetMessages);
         return builder;
+    }
+
+    private void handleGetMessages(final Context context) {
+        try {
+            context.json(this.service.getAllMessages());
+        } catch (StorageException e) {
+            context.status(HttpStatus.INTERNAL_SERVER_ERROR_500);
+            return;
+        }
+
     }
 
     private void handlePostLogin(final Context context) {

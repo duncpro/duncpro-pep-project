@@ -3,7 +3,9 @@ package Service;
 import DAO.Dao;
 import DAO.StorageException;
 import Model.Account;
+import Model.Message;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Objects;
 
@@ -34,12 +36,16 @@ public class SocialMediaService {
         Optional<Account> result = this.dao.getUserByUsername(username);
 
         if (result.isEmpty()) throw new LoginException();
-        
+
         Account account = result.get();
 
         if (!Objects.equals(account.password, password)) 
             throw new LoginException();
 
         return account.account_id;
+    }
+
+    public List<Message> getAllMessages() throws StorageException {
+        return this.dao.getAllMessages();
     }
 }
