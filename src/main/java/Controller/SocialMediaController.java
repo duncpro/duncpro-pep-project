@@ -12,15 +12,13 @@ import Service.SocialMediaService;
 import Service.SocialMediaService.LoginException;
 import Service.SocialMediaService.RegisterAccountException;
 import Service.SocialMediaService.SendMessageException;
+import Service.SocialMediaService.UpdateMessageException;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
-import java.util.Optional;
 
-/**
- * TODO: You will need to write your own endpoints and handlers for your controller. The endpoints you will need can be
- * found in readme.md as well as the test cases. You should
- * refer to prior mini-project labs and lecture materials for guidance on how a controller may be built.
- */
+import java.util.Optional;
+import java.util.List;
+
 public class SocialMediaController {
     private final SocialMediaService service = new SocialMediaService();
     private final ObjectMapper om = new ObjectMapper();
@@ -37,7 +35,86 @@ public class SocialMediaController {
         builder.post("login", this::handlePostLogin);
         builder.get("messages", this::handleGetMessages);
         builder.get("messages/{id}", this::handleGetMessageId);
+        builder.delete("messages/{id}", this::handleDeleteMessageId);
+        builder.patch("messages/{message_id}", this::handlePatchMessage);
+        builder.get("accounts/{account_id}/messages", this::handleGetAccountMessages);
         return builder;
+    }
+
+    private void handlePatchMessage(final Context context) {
+        final int message_id;
+        try {
+            message_id = Integer.valueOf(context.pathParam("message_id"));
+        } catch (NumberFormatException e) {
+            context.status(HttpStatus.BAD_REQUEST_400);
+            return;
+        }
+
+        final String message_text;
+        
+        try {
+            message_text = om.readValue(context.body(), Message.class).message_text;
+        } catch (JsonProcessingException e) {
+            context.status(HttpStatus.BAD_REQUEST_400);
+            return;
+        }
+
+        final Message message;
+        try {
+            message = this.service.updateMessageText(message_id, message_text);
+        } catch (UpdateMessageException e) {
+            context.status(HttpStatus.BAD_REQUEST_400);
+            return;
+        } catch (StorageException e) {
+            context.status(HttpStatus.INTERNAL_SERVER_ERROR_500);
+            return;
+        }
+
+        context.json(message);
+    }
+
+    private void handleGetAccountMessages(final Context context) {
+        final int account_id;
+        try {
+            account_id = Integer.valueOf(context.pathParam("account_id"));
+        } catch (NumberFormatException e) {
+            return;
+        }
+
+        final List<Message> messages;
+        try {
+            messages = this.service.getMessagesByUser(account_id);
+        } catch (StorageException e) {
+            e.printStackTrace();
+            context.status(HttpStatus.INTERNAL_SERVER_ERROR_500);
+            return;
+        }
+        
+        context.json(messages);
+    }
+
+    private void handleDeleteMessageId(final Context context) {
+        final int id;
+        try {
+            id = Integer.valueOf(context.pathParam("id"));
+        } catch (NumberFormatException e) {
+            return;
+        }
+
+        final Optional<Message> deleted;
+
+        try {
+            deleted = this.service.deleteMessage(id);
+        } catch (StorageException e) {
+            context.status(HttpStatus.INTERNAL_SERVER_ERROR_500);
+            e.printStackTrace();
+            return;
+        }
+
+        if (deleted.isPresent()) {
+            final Message message = deleted.get();
+            context.json(message);
+        }
     }
 
     private void handleGetMessageId(final Context context) {

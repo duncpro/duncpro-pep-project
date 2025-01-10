@@ -13,15 +13,65 @@ import Model.Account;
 import Model.Message;
 import Util.ConnectionUtil;
 
-/**
- *     message_id int primary key auto_increment,
-    posted_by int,
-    message_text varchar(255),
-    time_posted_epoch bigint,
-    foreign key (posted_by) references  account(account_id)
- */
 
 public class Dao {
+    public int updateMessageText(int message_id, String message_text) throws StorageException {
+        try {
+            try (final Connection connection = ConnectionUtil.getConnection()) {
+                try (final PreparedStatement statement = connection.prepareStatement(
+                    "UPDATE message SET message_text = ? WHERE message_id = ?;")) {
+                        statement.setString(1, message_text);
+                        statement.setInt(2, message_id);
+                        return statement.executeUpdate();
+                    }
+            }
+        } catch (SQLException e) {
+            throw new StorageException(e);
+        }
+    }
+
+    public List<Message> getMessagesByUser(int accountId) throws StorageException {
+        List<Message> messages = new ArrayList<Message>();
+
+        try {
+            try (final Connection connection = ConnectionUtil.getConnection()) {
+                try (final PreparedStatement statement = connection.prepareStatement(
+                "SELECT message_id, message_text, time_posted_epoch FROM message WHERE posted_by = ?;")) {
+                    statement.setInt(1, accountId);
+
+                    try (final ResultSet results = statement.executeQuery()) {
+                        while (results.next()) {
+                            final Message message = new Message();
+                            message.message_id = results.getInt("message_id");
+                            message.message_text = results.getString("message_text");
+                            message.time_posted_epoch = results.getLong("time_posted_epoch");
+                            message.posted_by = accountId;
+                            messages.add(message);
+                        }
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            throw new StorageException(e);
+        }
+
+        return messages;
+    }
+
+    public void deleteMessage(int id) throws StorageException {
+        try {
+            try (final Connection connection = ConnectionUtil.getConnection()) {
+                try (final PreparedStatement statement = connection.prepareStatement(
+                    "DELETE FROM message WHERE message_id = ?;")) {
+                        statement.setInt(1, id);
+                        statement.executeUpdate();
+                    }
+            }
+        } catch (SQLException e) {
+            throw new StorageException(e);
+        }
+    }
+
     public Optional<Message> getMessageById(int id) throws StorageException {
         try {
             try (final Connection connection = ConnectionUtil.getConnection()) {

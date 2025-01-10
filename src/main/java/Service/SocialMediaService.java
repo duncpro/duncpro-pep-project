@@ -52,4 +52,25 @@ public class SocialMediaService {
     public Optional<Message> getMessageById(int id) throws StorageException {
         return this.dao.getMessageById(id);
     }
+
+    public Optional<Message> deleteMessage(int id) throws StorageException {
+        final Optional<Message> message = this.getMessageById(id);
+        this.dao.deleteMessage(id);
+        return message;
+    }
+
+    public List<Message> getMessagesByUser(int accountId) throws StorageException {
+        return this.dao.getMessagesByUser(accountId);
+    }
+
+    public static class UpdateMessageException extends Exception {}
+
+    public Message updateMessageText(int messageId, String messageText) throws StorageException, UpdateMessageException {
+        if (messageText.isBlank()) throw new UpdateMessageException();
+        if (messageText.length() > 255) throw new UpdateMessageException();
+        this.dao.updateMessageText(messageId, messageText);
+        final Optional<Message> message = this.dao.getMessageById(messageId);
+        if (message.isEmpty()) throw new UpdateMessageException();
+        return message.get();
+    }
 }
